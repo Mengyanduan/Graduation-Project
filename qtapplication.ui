@@ -1,0 +1,1042 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>QtApplicationClass</class>
+ <widget class="QMainWindow" name="QtApplicationClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>681</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1200</width>
+    <height>680</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>QtApplication</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QVTKWidget" name="qvtkWidget">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1200</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>文件</string>
+    </property>
+    <addaction name="action_Open"/>
+    <addaction name="action_Add"/>
+    <addaction name="action_Save"/>
+    <addaction name="action_SaveAs"/>
+    <addaction name="action_Clear"/>
+    <addaction name="action_Exit"/>
+   </widget>
+   <widget class="QMenu" name="menu_View">
+    <property name="title">
+     <string>视图</string>
+    </property>
+    <addaction name="action_DataManager"/>
+    <addaction name="action_PropertiesManager"/>
+    <addaction name="action_ConsoleManager"/>
+    <addaction name="action_RGBManager"/>
+   </widget>
+   <widget class="QMenu" name="menu_Display">
+    <property name="title">
+     <string>显示</string>
+    </property>
+    <widget class="QMenu" name="menu_AngleView">
+     <property name="title">
+      <string>视角</string>
+     </property>
+     <addaction name="action_MainView"/>
+     <addaction name="action_LeftView"/>
+     <addaction name="action_TopView"/>
+    </widget>
+    <addaction name="action_RandomColor"/>
+    <addaction name="action_PointCloudColorChange"/>
+    <addaction name="action_BackgroundColorChange"/>
+    <addaction name="menu_AngleView"/>
+   </widget>
+   <widget class="QMenu" name="menu_Generate">
+    <property name="title">
+     <string>三维重建</string>
+    </property>
+    <addaction name="action_Surface"/>
+    <addaction name="action_Wireframe"/>
+   </widget>
+   <widget class="QMenu" name="menu_Simplification">
+    <property name="title">
+     <string>点云简化</string>
+    </property>
+    <addaction name="action_Simplify"/>
+    <addaction name="action_simplify2"/>
+   </widget>
+   <widget class="QMenu" name="menu_Feature_extraction">
+    <property name="title">
+     <string>特征提取</string>
+    </property>
+    <addaction name="action_Boundary"/>
+   </widget>
+   <widget class="QMenu" name="menu_Help">
+    <property name="title">
+     <string>帮助</string>
+    </property>
+    <addaction name="action_Help"/>
+    <addaction name="action_About"/>
+   </widget>
+   <addaction name="menu_File"/>
+   <addaction name="menu_View"/>
+   <addaction name="menu_Display"/>
+   <addaction name="menu_Feature_extraction"/>
+   <addaction name="menu_Simplification"/>
+   <addaction name="menu_Generate"/>
+   <addaction name="menu_Help"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionOpen"/>
+   <addaction name="actionAdd"/>
+   <addaction name="actionClear"/>
+   <addaction name="actionSave"/>
+   <addaction name="actionSaveAs"/>
+   <addaction name="separator"/>
+   <addaction name="actionRandomColor"/>
+   <addaction name="actionPointCloudColorChange"/>
+   <addaction name="actionBackgroundColorChange"/>
+   <addaction name="separator"/>
+   <addaction name="actionMainView"/>
+   <addaction name="actionLeftView"/>
+   <addaction name="actionTopView"/>
+   <addaction name="separator"/>
+   <addaction name="actionSurface"/>
+   <addaction name="actionWireframe"/>
+   <addaction name="separator"/>
+   <addaction name="actionHelp"/>
+   <addaction name="actionAbout"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="dock_datatree">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>230</width>
+     <height>233</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>400</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>点云文件管理窗口</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dock_PointCloud">
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="0">
+      <widget class="QTreeWidget" name="tree_PointCloud">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="columnCount">
+        <number>1</number>
+       </property>
+       <attribute name="headerVisible">
+        <bool>true</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string>Point Cloud</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dock_rgbcolor">
+   <property name="minimumSize">
+    <size>
+     <width>220</width>
+     <height>400</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>500</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
+   </property>
+   <property name="windowTitle">
+    <string>显示管理窗口</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dock_RGB_Color">
+    <layout class="QGridLayout" name="gridLayout_10">
+     <item row="1" column="0">
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="3" column="1">
+        <widget class="QLCDNumber" name="Red_lcdNumber">
+         <property name="digitCount">
+          <number>3</number>
+         </property>
+         <property name="mode">
+          <enum>QLCDNumber::Dec</enum>
+         </property>
+         <property name="segmentStyle">
+          <enum>QLCDNumber::Filled</enum>
+         </property>
+         <property name="value" stdset="0">
+          <double>255.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="Red_Label">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;红&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="textFormat">
+          <enum>Qt::AutoText</enum>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="2">
+        <widget class="QSlider" name="Red_Slider">
+         <property name="minimumSize">
+          <size>
+           <width>132</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximum">
+          <number>255</number>
+         </property>
+         <property name="pageStep">
+          <number>10</number>
+         </property>
+         <property name="sliderPosition">
+          <number>255</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="tickInterval">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="3" column="0">
+      <layout class="QGridLayout" name="gridLayout_6">
+       <item row="2" column="1">
+        <widget class="QLCDNumber" name="Green_lcdNumber">
+         <property name="digitCount">
+          <number>3</number>
+         </property>
+         <property name="segmentStyle">
+          <enum>QLCDNumber::Filled</enum>
+         </property>
+         <property name="value" stdset="0">
+          <double>255.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <widget class="QSlider" name="Green_Slider">
+         <property name="minimumSize">
+          <size>
+           <width>132</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximum">
+          <number>255</number>
+         </property>
+         <property name="pageStep">
+          <number>10</number>
+         </property>
+         <property name="sliderPosition">
+          <number>255</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="Green_Label">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;绿&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="4" column="0">
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="1" column="1">
+        <widget class="QLCDNumber" name="Blue_lcdNumber">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Box</enum>
+         </property>
+         <property name="digitCount">
+          <number>3</number>
+         </property>
+         <property name="value" stdset="0">
+          <double>255.000000000000000</double>
+         </property>
+         <property name="intValue" stdset="0">
+          <number>255</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="Blue_Label">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;蓝&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QSlider" name="Blue_Slider">
+         <property name="minimumSize">
+          <size>
+           <width>132</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximum">
+          <number>255</number>
+         </property>
+         <property name="pageStep">
+          <number>10</number>
+         </property>
+         <property name="sliderPosition">
+          <number>255</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="6" column="0">
+      <layout class="QGridLayout" name="gridLayout_9">
+       <item row="0" column="0">
+        <widget class="QCheckBox" name="Cordinate">
+         <property name="text">
+          <string>坐标系</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QCheckBox" name="Background">
+         <property name="text">
+          <string>背景颜色：暗/亮</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="5" column="0">
+      <layout class="QGridLayout" name="gridLayout_8">
+       <item row="0" column="1">
+        <widget class="QLCDNumber" name="PointSize_lcdNumber">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Panel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <property name="digitCount">
+          <number>1</number>
+         </property>
+         <property name="segmentStyle">
+          <enum>QLCDNumber::Filled</enum>
+         </property>
+         <property name="value" stdset="0">
+          <double>1.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="PointSize_label">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QSlider" name="PointSize_Slider">
+         <property name="minimumSize">
+          <size>
+           <width>132</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>9</number>
+         </property>
+         <property name="pageStep">
+          <number>10</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dock_properties">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>230</width>
+     <height>232</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>400</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>属性窗口</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dock_Properties">
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="0">
+      <widget class="QTableWidget" name="table_Properties">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="showGrid">
+        <bool>false</bool>
+       </property>
+       <property name="rowCount">
+        <number>4</number>
+       </property>
+       <property name="columnCount">
+        <number>2</number>
+       </property>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>100</number>
+       </attribute>
+       <attribute name="horizontalHeaderStretchLastSection">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="verticalHeaderVisible">
+        <bool>false</bool>
+       </attribute>
+       <row/>
+       <row/>
+       <row/>
+       <row/>
+       <column/>
+       <column/>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dock_console">
+   <property name="minimumSize">
+    <size>
+     <width>1000</width>
+     <height>140</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>操作记录窗口</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dock_Console">
+    <layout class="QGridLayout" name="gridLayout_4">
+     <item row="0" column="0">
+      <widget class="QTableWidget" name="table_Console">
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>524287</width>
+         <height>524287</height>
+        </size>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::DefaultContextMenu</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="showGrid">
+        <bool>false</bool>
+       </property>
+       <property name="columnCount">
+        <number>5</number>
+       </property>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>180</number>
+       </attribute>
+       <attribute name="horizontalHeaderStretchLastSection">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="verticalHeaderVisible">
+        <bool>false</bool>
+       </attribute>
+       <column/>
+       <column/>
+       <column/>
+       <column/>
+       <column/>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <action name="action_Open">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Open.png</normaloff>:/Icon/Resources/Icon/Open.png</iconset>
+   </property>
+   <property name="text">
+    <string>打开</string>
+   </property>
+   <property name="toolTip">
+    <string>打开</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="action_Save">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Save.png</normaloff>:/Icon/Resources/Icon/Save.png</iconset>
+   </property>
+   <property name="text">
+    <string>保存</string>
+   </property>
+   <property name="toolTip">
+    <string>保存</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="action_Exit">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Exit.png</normaloff>:/Icon/Resources/Icon/Exit.png</iconset>
+   </property>
+   <property name="text">
+    <string>退出</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Open.png</normaloff>:/Icon/Resources/Icon/Open.png</iconset>
+   </property>
+   <property name="text">
+    <string>打开</string>
+   </property>
+   <property name="toolTip">
+    <string>打开</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Save.png</normaloff>:/Icon/Resources/Icon/Save.png</iconset>
+   </property>
+   <property name="text">
+    <string>保存</string>
+   </property>
+   <property name="toolTip">
+    <string>保存</string>
+   </property>
+  </action>
+  <action name="action_Clear">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Clear.png</normaloff>:/Icon/Resources/Icon/Clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>清空</string>
+   </property>
+   <property name="toolTip">
+    <string>清空</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="action_Add">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Add.png</normaloff>:/Icon/Resources/Icon/Add.png</iconset>
+   </property>
+   <property name="text">
+    <string>添加</string>
+   </property>
+   <property name="toolTip">
+    <string>添加</string>
+   </property>
+  </action>
+  <action name="action_SaveAs">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Save as.png</normaloff>:/Icon/Resources/Icon/Save as.png</iconset>
+   </property>
+   <property name="text">
+    <string>另存为</string>
+   </property>
+   <property name="toolTip">
+    <string>另存为</string>
+   </property>
+  </action>
+  <action name="actionAdd">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Add.png</normaloff>:/Icon/Resources/Icon/Add.png</iconset>
+   </property>
+   <property name="text">
+    <string>添加</string>
+   </property>
+   <property name="toolTip">
+    <string>添加</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Save as.png</normaloff>:/Icon/Resources/Icon/Save as.png</iconset>
+   </property>
+   <property name="text">
+    <string>另存为</string>
+   </property>
+   <property name="toolTip">
+    <string>另存为</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Clear.png</normaloff>:/Icon/Resources/Icon/Clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>清空</string>
+   </property>
+   <property name="toolTip">
+    <string>清空</string>
+   </property>
+  </action>
+  <action name="action_DataManager">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>点云文件管理窗口</string>
+   </property>
+   <property name="toolTip">
+    <string>点云文件管理器</string>
+   </property>
+  </action>
+  <action name="action_PropertiesManager">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>属性窗口</string>
+   </property>
+   <property name="toolTip">
+    <string>属性窗口</string>
+   </property>
+  </action>
+  <action name="action_ConsoleManager">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>操作记录窗口</string>
+   </property>
+   <property name="toolTip">
+    <string>操作记录窗口</string>
+   </property>
+  </action>
+  <action name="action_RGBManager">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>显示管理窗口</string>
+   </property>
+  </action>
+  <action name="action_PointCloudColorChange">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Pcolor.png</normaloff>:/Icon/Resources/Icon/Pcolor.png</iconset>
+   </property>
+   <property name="text">
+    <string>更改点云颜色</string>
+   </property>
+   <property name="toolTip">
+    <string>更改点云颜色</string>
+   </property>
+  </action>
+  <action name="action_BackgroundColorChange">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Bcolor.png</normaloff>:/Icon/Resources/Icon/Bcolor.png</iconset>
+   </property>
+   <property name="text">
+    <string>更改背景颜色</string>
+   </property>
+   <property name="toolTip">
+    <string>更改背景颜色</string>
+   </property>
+  </action>
+  <action name="action_MainView">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Main.png</normaloff>:/Icon/Resources/Icon/Main.png</iconset>
+   </property>
+   <property name="text">
+    <string>主视图</string>
+   </property>
+  </action>
+  <action name="action_LeftView">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Left.png</normaloff>:/Icon/Resources/Icon/Left.png</iconset>
+   </property>
+   <property name="text">
+    <string>左视图</string>
+   </property>
+  </action>
+  <action name="action_TopView">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Top.png</normaloff>:/Icon/Resources/Icon/Top.png</iconset>
+   </property>
+   <property name="text">
+    <string>顶视图</string>
+   </property>
+  </action>
+  <action name="action_Surface">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Surface.png</normaloff>:/Icon/Resources/Icon/Surface.png</iconset>
+   </property>
+   <property name="text">
+    <string>网格面片</string>
+   </property>
+  </action>
+  <action name="action_Wireframe">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Wirefame.png</normaloff>:/Icon/Resources/Icon/Wirefame.png</iconset>
+   </property>
+   <property name="text">
+    <string>网格线框</string>
+   </property>
+  </action>
+  <action name="actionPointCloudColorChange">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Pcolor.png</normaloff>:/Icon/Resources/Icon/Pcolor.png</iconset>
+   </property>
+   <property name="text">
+    <string>修改点云颜色</string>
+   </property>
+  </action>
+  <action name="actionBackgroundColorChange">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Bcolor.png</normaloff>:/Icon/Resources/Icon/Bcolor.png</iconset>
+   </property>
+   <property name="text">
+    <string>修改背景颜色</string>
+   </property>
+  </action>
+  <action name="actionMainView">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Main.png</normaloff>:/Icon/Resources/Icon/Main.png</iconset>
+   </property>
+   <property name="text">
+    <string>主视图</string>
+   </property>
+  </action>
+  <action name="actionLeftView">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Left.png</normaloff>:/Icon/Resources/Icon/Left.png</iconset>
+   </property>
+   <property name="text">
+    <string>左视图</string>
+   </property>
+  </action>
+  <action name="actionTopView">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Top.png</normaloff>:/Icon/Resources/Icon/Top.png</iconset>
+   </property>
+   <property name="text">
+    <string>俯视图</string>
+   </property>
+  </action>
+  <action name="actionSurface">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Surface.png</normaloff>:/Icon/Resources/Icon/Surface.png</iconset>
+   </property>
+   <property name="text">
+    <string>网格面片</string>
+   </property>
+  </action>
+  <action name="actionWireframe">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Wirefame.png</normaloff>:/Icon/Resources/Icon/Wirefame.png</iconset>
+   </property>
+   <property name="text">
+    <string>网格线框</string>
+   </property>
+  </action>
+  <action name="action_Help">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Help.png</normaloff>:/Icon/Resources/Icon/Help.png</iconset>
+   </property>
+   <property name="text">
+    <string>PCL点云库官网</string>
+   </property>
+  </action>
+  <action name="action_About">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Info.png</normaloff>:/Icon/Resources/Icon/Info.png</iconset>
+   </property>
+   <property name="text">
+    <string>关于</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Help.png</normaloff>:/Icon/Resources/Icon/Help.png</iconset>
+   </property>
+   <property name="text">
+    <string>PCL点云库官网</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Info.png</normaloff>:/Icon/Resources/Icon/Info.png</iconset>
+   </property>
+   <property name="text">
+    <string>关于</string>
+   </property>
+  </action>
+  <action name="actionRandomColor">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Color.png</normaloff>:/Icon/Resources/Icon/Color.png</iconset>
+   </property>
+   <property name="text">
+    <string>随机着色</string>
+   </property>
+   <property name="toolTip">
+    <string>点云随机着色</string>
+   </property>
+  </action>
+  <action name="action_RandomColor">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/Icon/Resources/Icon/Color.png</normaloff>:/Icon/Resources/Icon/Color.png</iconset>
+   </property>
+   <property name="text">
+    <string>点云随机着色</string>
+   </property>
+  </action>
+  <action name="action_Simplify">
+   <property name="text">
+    <string>简化</string>
+   </property>
+   <property name="toolTip">
+    <string>点云简化</string>
+   </property>
+  </action>
+  <action name="action_Boundary">
+   <property name="text">
+    <string>提取边界</string>
+   </property>
+   <property name="toolTip">
+    <string>提取平面点云边界</string>
+   </property>
+  </action>
+  <action name="action_simplify2">
+   <property name="text">
+    <string>简化2</string>
+   </property>
+  </action>
+  <zorder>dock_datatree</zorder>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QVTKWidget</class>
+   <extends>QWidget</extends>
+   <header>QVTKWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="qtapplication.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -1,0 +1,22 @@
+<RCC>
+  <qresource prefix="Icon">
+    <file>Resources/Icon/Cordinate.png</file>
+    <file>Resources/Icon/Add.png</file>
+    <file>Resources/Icon/Bcolor.png</file>
+    <file>Resources/Icon/Clear.png</file>
+    <file>Resources/Icon/Color.png</file>
+    <file>Resources/Icon/Exit.png</file>
+    <file>Resources/Icon/Help.png</file>
+    <file>Resources/Icon/Icon.png</file>
+    <file>Resources/Icon/Info.png</file>
+    <file>Resources/Icon/Left.png</file>
+    <file>Resources/Icon/Main.png</file>
+    <file>Resources/Icon/Open.png</file>
+    <file>Resources/Icon/Pcolor.png</file>
+    <file>Resources/Icon/Save as.png</file>
+    <file>Resources/Icon/Save.png</file>
+    <file>Resources/Icon/Surface.png</file>
+    <file>Resources/Icon/Top.png</file>
+    <file>Resources/Icon/Wirefame.png</file>
+  </qresource>
+</RCC>
