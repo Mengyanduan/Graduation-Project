@@ -11,7 +11,7 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include "ui_qtapplication.h"
 #include "Tools.h"
 #include "AboutWin.h"
-#include "GBK.h"
+
 
 #include <iostream>
 #include <fstream>

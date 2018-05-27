@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QDialog>
 #include "ui_AboutWin.h"
-#include "GBK.h"
+
 
 class AboutWin : public QDialog
 {
