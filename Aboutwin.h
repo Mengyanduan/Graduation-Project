@@ -5,7 +5,6 @@
 #include <QDialog>
 #include "ui_AboutWin.h"
 
-
 class AboutWin : public QDialog
 {
 	Q_OBJECT

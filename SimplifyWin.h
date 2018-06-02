@@ -17,9 +17,10 @@ public:
 private:
 	Ui::SimplifyWin ui;
 signals:
-	//void  sendData(QString);
-	private slots:
-	//void on_buttonBox_accepted();
+	void SendData(QString simplify_rate);
+private slots:
+	void on_buttonBox_accepted();
+    //void sendData(QString text);
 };
 
 #endif // SIMPLIFY_H

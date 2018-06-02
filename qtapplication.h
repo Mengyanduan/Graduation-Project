@@ -2,17 +2,20 @@
 #define QTAPPLICATION_H
 
 #include <vtkAutoInit.h> 
+#include <vtkRenderWindow.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle);
 
 
-#include <QtWidgets/QMainWindow>
+
 #include "MyCloud.h"
 #include "ui_qtapplication.h"
 #include "Tools.h"
 #include "AboutWin.h"
+#include "SimplifyWin.h"
+#include "PointSelected.h"
 
-
+//标准C++头文件引用格式
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -27,12 +30,13 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/obj_io.h>
 
-
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-
+#include <pcl/common/common.h>
+//#include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/common/common.h>
+#include <pcl/visualization/point_picking_event.h>
 
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
@@ -43,6 +47,8 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/search/kdtree.h>
+//#include <pcl/octree/octree_pointcloud.h>
+//#include <pcl/octree/octree.h>
 
 #include <pcl/surface/gp3.h>
 
@@ -53,8 +59,6 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include <pcl/segmentation/extract_clusters.h>
 
 
-
-#include <vector>
 #include <QtWidgets/QMainWindow>//contains UI elements
 #include <QString>
 #include <QDebug>
@@ -70,7 +74,6 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include "QVTKWidget.h"
-#include <vtkRenderWindow.h>
 #include <QTextEdit>
 #include <QTime>
 #include <QMouseEvent> 
@@ -84,6 +87,9 @@ typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 //brief PointCloud represents the base class in PCL for storing collections of 3D points
 
+
+
+
 class QtApplication : public QMainWindow
 {
 	Q_OBJECT
@@ -91,16 +97,31 @@ class QtApplication : public QMainWindow
 public:
 	QtApplication(QWidget *parent = 0);
 	~QtApplication();
-
+	static void SelectPoint_callback(const pcl::visualization::PointPickingEvent& event, void* args);//静态回调函数
+	static QtApplication *pThis;//静态对象指针
+	void PointPickingShow(pcl::PointXYZRGBA current_point);
+	boost::mutex cloud_mutex;
+	struct callback_args		// 用于将参数传递给回调函数的结构
+	{
+		PointCloudT::Ptr clicked_points_3d;
+		pcl::visualization::PCLVisualizer::Ptr viewerPtr;
+	};
 private:
 	Ui::QtApplicationClass ui;
+
+	// Mutex: //
+
 
 	//点云数据存储
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz;//只有XYZ坐标的点的点云
 	
 	MyCloud mycloud;//PointXZYRGBA类型的点云
 	std::vector<MyCloud> mycloud_vec;  //点云容器
-	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;//A boost shared pointer to a PCLVisualier
+	
+	//pcl::visualization::PCLVisualizer::Ptr viewer = new pcl::visualization::PCLVisualizer("viewer");
+	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+	//pcl::visualization::PCLVisualizer::Ptr viewer;
+
 	long total_points = 0;//保存所有点云总点数
 
 	unsigned int red = 255;
@@ -112,7 +133,12 @@ private:
 	
 	QTime timer;//计时器,记录某个动操作执行的时间
 	bool enable_console = true; // 操作记录的可用状态
+	
+	//子窗口实例化
 	AboutWin *aboutwin = new AboutWin(this);
+	SimplifyWin *simplifywin = new SimplifyWin(this);
+	PointSelected *pointselected = new PointSelected(this);
+
 
 	/***** 一些需要的有用的方法 ***/
 	void initial();//初始化vtk部件
@@ -126,6 +152,10 @@ private:
 	void setConsoleTable();//设置操作记录管理窗口
 	void setRGBDock();//设置RGBDock窗口
 	void consoleLog(QString operation, QString subname, QString filename, QString note);//操作记录填写函数
+	
+	pcl::PointCloud<pcl::PointXYZ>::Ptr transformPointCloud(MyCloud cloud_RGBA);//将MyCloud(PointCloud_RGBA)转换成PointCloud_XYZ
+	void saveResult(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_result);
+	
 
 
 private slots:
@@ -138,6 +168,11 @@ private slots:
 	void Savemulti(QString savename);
 	void Clear();
 	void Exit();
+	// 视图菜单槽
+	void HideDataDock();
+	void HidePropertiesDock();
+	void HideConsoleDock();
+	void HideRGBDock();		
 	// 显示菜单槽
 	void RandomColor();
 	void PointColorChange();
@@ -145,19 +180,20 @@ private slots:
 	void MainView();//主视图
 	void LeftView();//左视图
 	void TopView();//俯视图
-	// 视图菜单槽
-	void HideDataDock();
-	void HidePropertiesDock();
-	void HideConsoleDock();
-	void HideRGBDock();
-	// 处理菜单槽
+	//三维图形菜单槽
+	void CreateSphere();//绘制一个三维球面
+
+	// 点云简化菜单槽
+	void Simplify();
+	void ReceiveData(QString rate);
+	void Simplify2(int cloud_id,int rate);
+	void BoundingBox();
+	// 特征提取菜单槽
+	void SelectPoint();
+	void Boundary();
+    // 三维重建菜单槽
 	void Surface();//法线估计、曲面重建、网格面片显示
 	void Wireframe();//法线估计、曲面重建、网格线框显示
-	//点云简化菜单槽
-	void Simplify();
-	//特征提取菜单槽
-	void Boundary();
-
 	// 帮助菜单槽
 	void Help();
 	void About();

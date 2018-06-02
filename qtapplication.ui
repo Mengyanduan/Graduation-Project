@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1200</width>
-    <height>681</height>
+    <height>680</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>QtApplication</string>
+   <string>GraduateDesign</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="minimumSize">
@@ -100,12 +100,13 @@
      <string>点云简化</string>
     </property>
     <addaction name="action_Simplify"/>
-    <addaction name="action_simplify2"/>
+    <addaction name="action_BoundingBox"/>
    </widget>
    <widget class="QMenu" name="menu_Feature_extraction">
     <property name="title">
      <string>特征提取</string>
     </property>
+    <addaction name="action_SelectPoint"/>
     <addaction name="action_Boundary"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
@@ -115,9 +116,16 @@
     <addaction name="action_Help"/>
     <addaction name="action_About"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>三维图形</string>
+    </property>
+    <addaction name="action_Sphere"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Display"/>
+   <addaction name="menu"/>
    <addaction name="menu_Feature_extraction"/>
    <addaction name="menu_Simplification"/>
    <addaction name="menu_Generate"/>
@@ -169,6 +177,14 @@
      <width>400</width>
      <height>524287</height>
     </size>
+   </property>
+   <property name="font">
+    <font>
+     <family>SimSun-ExtB</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
    </property>
    <property name="floating">
     <bool>false</bool>
@@ -224,6 +240,14 @@
      <height>524287</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <family>SimSun-ExtB</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
    <property name="floating">
     <bool>false</bool>
    </property>
@@ -258,6 +282,12 @@
        </item>
        <item row="3" column="0">
         <widget class="QLabel" name="Red_Label">
+         <property name="font">
+          <font>
+           <family>SimSun-ExtB</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;红&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -335,6 +365,12 @@
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="Green_Label">
+         <property name="font">
+          <font>
+           <family>SimSun-ExtB</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;绿&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -371,6 +407,12 @@
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="Blue_Label">
+         <property name="font">
+          <font>
+           <family>SimSun-ExtB</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;蓝&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -407,6 +449,12 @@
       <layout class="QGridLayout" name="gridLayout_9">
        <item row="0" column="0">
         <widget class="QCheckBox" name="Cordinate">
+         <property name="font">
+          <font>
+           <family>SimSun-ExtB</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>坐标系</string>
          </property>
@@ -414,6 +462,12 @@
        </item>
        <item row="1" column="0">
         <widget class="QCheckBox" name="Background">
+         <property name="font">
+          <font>
+           <family>SimSun-ExtB</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>背景颜色：暗/亮</string>
          </property>
@@ -450,6 +504,12 @@
        </item>
        <item row="0" column="0">
         <widget class="QLabel" name="PointSize_label">
+         <property name="font">
+          <font>
+           <family>SimSun-ExtB</family>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Size&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
@@ -504,6 +564,14 @@
      <height>524287</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <family>SimSun-ExtB</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
    <property name="windowTitle">
     <string>属性窗口</string>
    </property>
@@ -556,7 +624,7 @@
    <property name="minimumSize">
     <size>
      <width>1000</width>
-     <height>140</height>
+     <height>142</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -564,6 +632,14 @@
      <width>524287</width>
      <height>524287</height>
     </size>
+   </property>
+   <property name="font">
+    <font>
+     <family>SimSun-ExtB</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
    </property>
    <property name="windowTitle">
     <string>操作记录窗口</string>
@@ -623,7 +699,7 @@
   </widget>
   <action name="action_Open">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Open.png</normaloff>:/Icon/Resources/Icon/Open.png</iconset>
    </property>
    <property name="text">
@@ -638,7 +714,7 @@
   </action>
   <action name="action_Save">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Save.png</normaloff>:/Icon/Resources/Icon/Save.png</iconset>
    </property>
    <property name="text">
@@ -653,7 +729,7 @@
   </action>
   <action name="action_Exit">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Exit.png</normaloff>:/Icon/Resources/Icon/Exit.png</iconset>
    </property>
    <property name="text">
@@ -665,7 +741,7 @@
   </action>
   <action name="actionOpen">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Open.png</normaloff>:/Icon/Resources/Icon/Open.png</iconset>
    </property>
    <property name="text">
@@ -677,7 +753,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Save.png</normaloff>:/Icon/Resources/Icon/Save.png</iconset>
    </property>
    <property name="text">
@@ -689,7 +765,7 @@
   </action>
   <action name="action_Clear">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Clear.png</normaloff>:/Icon/Resources/Icon/Clear.png</iconset>
    </property>
    <property name="text">
@@ -704,7 +780,7 @@
   </action>
   <action name="action_Add">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Add.png</normaloff>:/Icon/Resources/Icon/Add.png</iconset>
    </property>
    <property name="text">
@@ -716,7 +792,7 @@
   </action>
   <action name="action_SaveAs">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Save as.png</normaloff>:/Icon/Resources/Icon/Save as.png</iconset>
    </property>
    <property name="text">
@@ -728,7 +804,7 @@
   </action>
   <action name="actionAdd">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Add.png</normaloff>:/Icon/Resources/Icon/Add.png</iconset>
    </property>
    <property name="text">
@@ -740,7 +816,7 @@
   </action>
   <action name="actionSaveAs">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Save as.png</normaloff>:/Icon/Resources/Icon/Save as.png</iconset>
    </property>
    <property name="text">
@@ -752,7 +828,7 @@
   </action>
   <action name="actionClear">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Clear.png</normaloff>:/Icon/Resources/Icon/Clear.png</iconset>
    </property>
    <property name="text">
@@ -817,7 +893,7 @@
   </action>
   <action name="action_PointCloudColorChange">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Pcolor.png</normaloff>:/Icon/Resources/Icon/Pcolor.png</iconset>
    </property>
    <property name="text">
@@ -829,7 +905,7 @@
   </action>
   <action name="action_BackgroundColorChange">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Bcolor.png</normaloff>:/Icon/Resources/Icon/Bcolor.png</iconset>
    </property>
    <property name="text">
@@ -841,7 +917,7 @@
   </action>
   <action name="action_MainView">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Main.png</normaloff>:/Icon/Resources/Icon/Main.png</iconset>
    </property>
    <property name="text">
@@ -850,7 +926,7 @@
   </action>
   <action name="action_LeftView">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Left.png</normaloff>:/Icon/Resources/Icon/Left.png</iconset>
    </property>
    <property name="text">
@@ -859,7 +935,7 @@
   </action>
   <action name="action_TopView">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Top.png</normaloff>:/Icon/Resources/Icon/Top.png</iconset>
    </property>
    <property name="text">
@@ -868,7 +944,7 @@
   </action>
   <action name="action_Surface">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Surface.png</normaloff>:/Icon/Resources/Icon/Surface.png</iconset>
    </property>
    <property name="text">
@@ -877,7 +953,7 @@
   </action>
   <action name="action_Wireframe">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Wirefame.png</normaloff>:/Icon/Resources/Icon/Wirefame.png</iconset>
    </property>
    <property name="text">
@@ -886,7 +962,7 @@
   </action>
   <action name="actionPointCloudColorChange">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Pcolor.png</normaloff>:/Icon/Resources/Icon/Pcolor.png</iconset>
    </property>
    <property name="text">
@@ -895,7 +971,7 @@
   </action>
   <action name="actionBackgroundColorChange">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Bcolor.png</normaloff>:/Icon/Resources/Icon/Bcolor.png</iconset>
    </property>
    <property name="text">
@@ -904,7 +980,7 @@
   </action>
   <action name="actionMainView">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Main.png</normaloff>:/Icon/Resources/Icon/Main.png</iconset>
    </property>
    <property name="text">
@@ -913,7 +989,7 @@
   </action>
   <action name="actionLeftView">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Left.png</normaloff>:/Icon/Resources/Icon/Left.png</iconset>
    </property>
    <property name="text">
@@ -922,7 +998,7 @@
   </action>
   <action name="actionTopView">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Top.png</normaloff>:/Icon/Resources/Icon/Top.png</iconset>
    </property>
    <property name="text">
@@ -931,7 +1007,7 @@
   </action>
   <action name="actionSurface">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Surface.png</normaloff>:/Icon/Resources/Icon/Surface.png</iconset>
    </property>
    <property name="text">
@@ -940,7 +1016,7 @@
   </action>
   <action name="actionWireframe">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Wirefame.png</normaloff>:/Icon/Resources/Icon/Wirefame.png</iconset>
    </property>
    <property name="text">
@@ -949,7 +1025,7 @@
   </action>
   <action name="action_Help">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Help.png</normaloff>:/Icon/Resources/Icon/Help.png</iconset>
    </property>
    <property name="text">
@@ -958,7 +1034,7 @@
   </action>
   <action name="action_About">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Info.png</normaloff>:/Icon/Resources/Icon/Info.png</iconset>
    </property>
    <property name="text">
@@ -967,7 +1043,7 @@
   </action>
   <action name="actionHelp">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Help.png</normaloff>:/Icon/Resources/Icon/Help.png</iconset>
    </property>
    <property name="text">
@@ -976,7 +1052,7 @@
   </action>
   <action name="actionAbout">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Info.png</normaloff>:/Icon/Resources/Icon/Info.png</iconset>
    </property>
    <property name="text">
@@ -985,7 +1061,7 @@
   </action>
   <action name="actionRandomColor">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Color.png</normaloff>:/Icon/Resources/Icon/Color.png</iconset>
    </property>
    <property name="text">
@@ -997,7 +1073,7 @@
   </action>
   <action name="action_RandomColor">
    <property name="icon">
-    <iconset>
+    <iconset resource="qtapplication.qrc">
      <normaloff>:/Icon/Resources/Icon/Color.png</normaloff>:/Icon/Resources/Icon/Color.png</iconset>
    </property>
    <property name="text">
@@ -1020,9 +1096,19 @@
     <string>提取平面点云边界</string>
    </property>
   </action>
-  <action name="action_simplify2">
+  <action name="action_BoundingBox">
    <property name="text">
-    <string>简化2</string>
+    <string>获取包围盒</string>
+   </property>
+  </action>
+  <action name="action_Sphere">
+   <property name="text">
+    <string>三维球</string>
+   </property>
+  </action>
+  <action name="action_SelectPoint">
+   <property name="text">
+    <string>拾取点</string>
    </property>
   </action>
   <zorder>dock_datatree</zorder>

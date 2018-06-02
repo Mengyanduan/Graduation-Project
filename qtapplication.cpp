@@ -1,16 +1,20 @@
 #include "qtapplication.h"
 #include <pcl/point_cloud.h>
+#include <pcl/filters/voxel_grid.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <ctime>
 
 
+
+
+QtApplication * QtApplication::pThis = NULL;
 QtApplication::QtApplication(QWidget *parent)
 	: QMainWindow(parent)
 {
 	ui.setupUi(this);
-	
+	pThis = this;//构造函数中将this指针赋给pThis，使得回调函数能通过pThis指针访问本对象
 	initial();//初始化	
 	
 	//***** 菜单栏和工具栏信号和槽函数连接 *****/
@@ -33,13 +37,19 @@ QtApplication::QtApplication(QWidget *parent)
 	QObject::connect(ui.action_PropertiesManager, &QAction::triggered, this, &QtApplication::HidePropertiesDock);
 	QObject::connect(ui.action_ConsoleManager, &QAction::triggered, this, &QtApplication::HideConsoleDock);
 	QObject::connect(ui.action_RGBManager, &QAction::triggered, this, &QtApplication::HideRGBDock);
-	// 处理(connect)
-	QObject::connect(ui.action_Surface, &QAction::triggered, this, &QtApplication::Surface);
-	QObject::connect(ui.action_Wireframe, &QAction::triggered, this, &QtApplication::Wireframe);
+	// 三维图形(connect)
+	QObject::connect(ui.action_Sphere,&QAction::triggered,this,&QtApplication::CreateSphere);
+
 	// 点云简化(connect)
 	QObject::connect(ui.action_Simplify, &QAction::triggered, this, &QtApplication::Simplify);
+	QObject::connect(ui.action_BoundingBox, &QAction::triggered, this, &QtApplication::BoundingBox);
 	// 特征提取(connect)
 	QObject::connect(ui.action_Boundary, &QAction::triggered, this, &QtApplication::Boundary);
+	QObject::connect(ui.action_SelectPoint, &QAction::triggered, this, &QtApplication::SelectPoint);
+	// 三维重建(connect)
+	QObject::connect(ui.action_Surface, &QAction::triggered, this, &QtApplication::Surface);
+	QObject::connect(ui.action_Wireframe, &QAction::triggered, this, &QtApplication::Wireframe);
+	
 	// 帮助(connect)
 	QObject::connect(ui.action_Help, &QAction::triggered, this, &QtApplication::Help);
 	QObject::connect(ui.action_About,&QAction::triggered, this, &QtApplication::About);
@@ -60,6 +70,9 @@ QtApplication::QtApplication(QWidget *parent)
 	
 	//
 
+	/***** 主窗口和子窗口之间信号和槽函数连接 *****/
+	connect(simplifywin, SIGNAL(SendData(QString)), this, SLOT(ReceiveData(QString)));
+	
 
 	/***** 颜色管理窗口信号和槽函数连接 *****/
 	// RGB颜色设置(connect)
@@ -104,18 +117,20 @@ void QtApplication::initial()
 
 	//点云初始化
 	mycloud.cloud.reset(new PointCloudT);
-	mycloud.cloud->resize(1);//RGBA点云初始化长宽，height=1无序点云
+	mycloud.cloud->resize(0);//RGBA点云初始化长宽，height=0无序点云
 	viewer.reset(new pcl::visualization::PCLVisualizer("viewer", false));
 	viewer->addPointCloud(mycloud.cloud, "cloud");
 
-
+	//原来初始化cloud_xyz
 	cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
-	cloud_xyz->resize(1);
+	cloud_xyz->resize(0);
 	viewer.reset(new pcl::visualization::PCLVisualizer("viewer", false));
 	viewer->addPointCloud(cloud_xyz, "cloud");
+	
 
-	ui.qvtkWidget->SetRenderWindow(viewer->getRenderWindow());
-	viewer->setupInteractor(ui.qvtkWidget->GetInteractor(), ui.qvtkWidget->GetRenderWindow());
+	//改变顺序
+	ui.qvtkWidget->SetRenderWindow(viewer->getRenderWindow());	
+	viewer->setupInteractor(ui.qvtkWidget->GetInteractor(), ui.qvtkWidget->GetRenderWindow());		
 	ui.qvtkWidget->update();
 	
 	//窗口控件初始化
@@ -252,6 +267,78 @@ void QtApplication::consoleLog(QString operation, QString subname, QString filen
 
 	ui.table_Console->scrollToBottom(); // 滑动自动滚到最底部
 }
+
+//将MyCloud(PointCloud_RGBA)转换成PointCloud_XYZ
+pcl::PointCloud<pcl::PointXYZ>::Ptr QtApplication::transformPointCloud(MyCloud cloud_RGBA)
+{
+	//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
+	pcl::PointXYZ point;
+	cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
+	for (size_t i = 0; i != cloud_RGBA.cloud->size(); i++)
+	{
+		point.x = cloud_RGBA.cloud->points[i].x;
+		point.y = cloud_RGBA.cloud->points[i].y;
+		point.z = cloud_RGBA.cloud->points[i].z;
+		cloud_xyz->push_back(point);//把这个点添加进cloud_xyz点云中
+	}
+	return cloud_xyz;
+}
+
+//将计算结果保存并加载
+void QtApplication::saveResult(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_result)
+{
+	QString result_filename = QFileDialog::getSaveFileName(this,
+		QString::fromLocal8Bit("保存结果点云文件"),
+		QString::fromLocal8Bit(mycloud.dirname.c_str()),
+		QString::fromLocal8Bit("点云文件(*.pcd);;全部文件(*.*)"));
+
+	if (result_filename.isEmpty())  return;
+	else
+	{
+		mycloud.cloud.reset(new PointCloudT); // Reset cloud
+		std::string filename = result_filename.toStdString();//点云全路径文件名
+		std::string subname = getFileName(filename);//点云文件名
+
+		pcl::io::savePCDFile(filename, *cloud_result);
+
+
+		QMessageBox::StandardButton rb = QMessageBox::question(this,
+			QString::fromLocal8Bit("提示信息"),
+			QString::fromLocal8Bit("保存成功，是否加载计算结果？"),
+			QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+
+		if (rb == QMessageBox::Yes)
+		{
+			pcl::io::loadPCDFile(filename, *(mycloud.cloud));//加载点云
+			setCloudColor(255, 255, 0);//颜色设置			
+			setA(255);  //设置点云为不透明
+
+			// 当前点云的信息
+			mycloud.filename = filename;
+			mycloud.subname = subname;
+			mycloud.dirname = filename.substr(0, filename.size() - subname.size());
+			mycloud_vec.push_back(mycloud);  //将点云导入点云容器
+			
+			showPointcloudAdd();  //更新视图窗口
+						
+			viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
+				3, "cloud" + QString::number(mycloud_vec.size()-1).toStdString());
+			ui.qvtkWidget->update();
+			//更新资源管理树
+			QTreeWidgetItem *cloudName = new QTreeWidgetItem(QStringList() << QString::fromLocal8Bit(mycloud.subname.c_str()));
+			cloudName->setIcon(0, QIcon(":/Icon/Resources/Icon/Icon.png"));//设置资源树图标
+			ui.tree_PointCloud->addTopLevelItem(cloudName);
+
+			total_points += mycloud.cloud->points.size();
+
+			setPropertyTable(mycloud_vec.size(), 0, total_points, "255 255 255");
+			
+		}
+	}
+
+
+}
+
 
 
 
@@ -449,58 +536,71 @@ void QtApplication::Add()
 	setPropertyTable(mycloud_vec.size(), 0, total_points, "255 255 255");
 	ui.statusBar->showMessage(QString::fromLocal8Bit("添加"));
 	showPointcloudAdd();  //更新视图窗口
+
 }
 
 //保存点云文件，支持.pcd 和.ply两种格式点云文件
 void QtApplication::Save()
 {
-	QString save_filename = QFileDialog::getSaveFileName(this,
-		QString::fromLocal8Bit("保存点云文件"),
-		QString::fromLocal8Bit(mycloud.dirname.c_str()), 
-		QString::fromLocal8Bit("点云文件(*.pcd *.ply);;全部文件(*.*)"));
-	
-
-	//文件名为空直接返回
-	if (save_filename.isEmpty())
+	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
+	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
+	if (selected_item_count == 0)
+	{
+		QMessageBox::information(this,
+			QString::fromLocal8Bit("提示信息"),
+			QString::fromLocal8Bit("请选择要保存的点云文件"));
 		return;
+	}
 	else
-	{	
-		std::string file_name = save_filename.toStdString();
-		std::string subname = getFileName(file_name);
-		QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
-		int selected_item_count = ui.tree_PointCloud->selectedItems().size();
-		// 如果未选中任何点云，则对视图窗口中的所有点云修改大小
-		if (mycloud_vec.size()==1||selected_item_count == 1)
-		{
-			//判断文件保存类型
-			int status = -1;
-			if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))//CaseInsensitive(不区分大小写)
-			{
-				status = pcl::io::savePCDFile(file_name, *(mycloud.cloud));
-			}
-			else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
-			{
-				status = pcl::io::savePLYFile(file_name, *(mycloud.cloud));
-			}
-			else //提示：无法保存为除了.ply .pcd以外的文件
-			{
-				QMessageBox::information(this,
-					QString::fromLocal8Bit("文件格式错误"),
-					QString::fromLocal8Bit("无法保存为除.ply .pcd外格式的文件"));
-				return;
-			}
-			consoleLog(QString::fromLocal8Bit("保存"), QString::fromStdString(subname), QString::fromLocal8Bit("保存点云文件"), "");
+	{
+		QString save_filename = QFileDialog::getSaveFileName(this,
+			QString::fromLocal8Bit("保存点云文件"),
+			QString::fromLocal8Bit(mycloud.dirname.c_str()),
+			QString::fromLocal8Bit("点云文件(*.ply *.pcd);;全部文件(*.*)"));
 
-		}
+		//文件名为空直接返回
+		if (save_filename.isEmpty())return;	
 		else
 		{
-			Savemulti(save_filename);
-		}	
-		QMessageBox::information(this,
-			QString::fromLocal8Bit("保存点云文件"),
-			QString::fromLocal8Bit(("保存" + subname + "成功！").c_str()));
+			std::string file_name = save_filename.toStdString();
+			std::string subname = getFileName(file_name);
+			
+			// 如果未选中任何点云，则对视图窗口中的所有点云修改大小
+			if (selected_item_count == 1)
+			{
+				int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[0]);
+				//判断文件保存类型,默认保存为.ply格式
+				int status = -1;
+				if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))//CaseInsensitive(不区分大小写)
+				{
+					status = pcl::io::savePCDFile(file_name, *(mycloud_vec[cloud_id].cloud));
+				}
+				else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
+				{
+					status = pcl::io::savePLYFile(file_name, *(mycloud_vec[cloud_id].cloud));
+				}
+				else //提示：无法保存为除了.ply .pcd以外的文件
+				{
+					QMessageBox::information(this,
+						QString::fromLocal8Bit("文件格式错误"),
+						QString::fromLocal8Bit("无法保存为除.ply .pcd外格式的文件"));
+					return;
+				}
+				consoleLog(QString::fromLocal8Bit("保存"), QString::fromStdString(subname), QString::fromLocal8Bit("保存点云文件"), "");
+
+			}
+			else
+			{
+				Savemulti(save_filename);
+			}
+			QMessageBox::information(this,
+				QString::fromLocal8Bit("保存点云文件"),
+				QString::fromLocal8Bit(("保存" + subname + "成功！").c_str()));
+		}
+		ui.statusBar->showMessage(QString::fromLocal8Bit("保存"));
+
 	}
-	ui.statusBar->showMessage(QString::fromLocal8Bit("保存"));
+	
 }
 
 //多个点云数据保存为一个文件
@@ -561,8 +661,8 @@ void QtApplication::Savemulti(QString savename)
 //清空点云
 void QtApplication::Clear()
 {
-	if (mycloud_vec.size())
-	{
+	/*if (mycloud_vec.size())
+	{*/
 	    mycloud_vec.clear();//清空点云容器
 		viewer->removeAllPointClouds();//从Viewer中移除所有点云;
 		viewer->removeAllShapes();//清空更彻底，移除所有
@@ -577,14 +677,14 @@ void QtApplication::Clear()
 			QString::fromLocal8Bit("提示信息"),
 			QString::fromLocal8Bit("已清空所有点云!"));		
 		showPointcloud();  //更新显示
-	}
-	else
-	{
-		QMessageBox::information(this,
-			QString::fromLocal8Bit("提示信息"),
-			QString::fromLocal8Bit("当前未加载任何点云文件！"));
-		return;
-	}
+	//}
+	//else
+	//{
+	//	QMessageBox::information(this,
+	//		QString::fromLocal8Bit("提示信息"),
+	//		QString::fromLocal8Bit("当前未加载任何点云文件！"));
+	//	return;
+	//}
 }
 
 //退出程序
@@ -802,7 +902,449 @@ void QtApplication::HideRGBDock()
 }
 
 
-/*****    处理菜单函数实现   *****/
+/*****    三维重建菜单函数实现   *****/
+//创建一个三维球
+void QtApplication::CreateSphere()
+{
+	mycloud.cloud.reset(new PointCloudT);//
+	ui.tree_PointCloud->clear();  //清空资源管理器的item
+	viewer->removeAllShapes();
+	mycloud_vec.clear();  //清空点云容器
+
+	timer.restart();//开始计时
+	pcl::PointXYZ p,p2,p3;                                  //存储球的圆心位置
+	p.x = 0.0; p.y = 0; p.z = 0;
+	p2.x = 20.0; p2.y = 0; p2.z = 0;
+	p3.x = 20.0; p3.y = 20.0; p3.z = 0;
+	//viewer->addSphere(p,50,0,1,0, "sphere1", 0);       //添加圆球几何对象
+	viewer->addText3D("PCL",p2,20.0,1,0,0,"text");
+	//viewer->addSphere(p2, 10, "sphere2", 0);
+	//viewer->addSphere(p3, 10, "sphere3", 0);
+	
+	//添加直线
+	//viewer->addLine<pcl::PointXYZ, pcl::PointXYZ>(pcl::PointXYZ(10, 10, 0), pcl::PointXYZ(10, 10, 10), "line");
+
+	//添加球体
+	//viewer->addSphere(pcl::PointXYZ(20, 20, 20), 5, 0, 1, 0, "sphere");
+
+	//添加正方形
+	//viewer->addCube(0, 5, 0, 5, 0, 5, 0,1,0, "cube");
+
+	//删除这些形状使用下面函数,填上形状对应的ID
+	//viewer.removeShape("cube");
+
+	viewer->resetCamera();
+	ui.qvtkWidget->update();
+
+	consoleLog(QString::fromLocal8Bit("绘制三维图形"),
+		QString::fromLocal8Bit("三维球"),
+		QString::fromLocal8Bit(" "),
+		QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0));
+
+}
+
+
+
+
+/*****    点云简化菜单函数实现   *****/
+
+void QtApplication::Simplify()
+{
+	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
+	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
+	if (selected_item_count == 0)
+	{
+		QMessageBox::information(this,
+			QString::fromLocal8Bit("提示信息"),
+			QString::fromLocal8Bit("请选择一个点云文件"));
+		return;
+	}
+	else
+	{
+		simplifywin->setModal(true);
+		simplifywin->show();
+	}
+
+}
+
+void QtApplication::ReceiveData(QString rate)
+{
+	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
+	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
+	for (int i = 0; i != selected_item_count; i++)
+	{
+			
+		int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[i]);
+		bool ok;
+		Simplify2(cloud_id,rate.toInt(&ok,10));			
+	}
+	setPropertyTable(mycloud_vec.size(), 0, total_points, "255 255 255");
+	showPointcloudAdd();  //更新视图窗口
+}
+
+
+//保留油菜叶片边缘轮廓的点云简化
+void QtApplication::Simplify2(int cloud_id, int rate)
+{
+	timer.restart();//开始计时
+	ui.statusBar->showMessage(QString::fromLocal8Bit("计算中...."));
+	//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_simple(new pcl::PointCloud<pcl::PointXYZ>);
+	cloud_xyz = transformPointCloud(mycloud_vec[cloud_id]);
+	//计算法线
+	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normEst;
+	pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZ>);
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree2(new pcl::search::KdTree<pcl::PointXYZ>);
+	kdtree->setInputCloud(cloud_xyz);
+	normEst.setInputCloud(cloud_xyz);
+	normEst.setSearchMethod(kdtree);
+	normEst.setKSearch(20);
+	normEst.compute(*normals);
+	//判断边缘点
+	pcl::PointCloud<pcl::Boundary> boundaries;
+	pcl::BoundaryEstimation<pcl::PointXYZ, pcl::Normal, pcl::Boundary> boundEst;
+	kdtree2->setInputCloud(cloud_xyz);
+	boundEst.setInputCloud(cloud_xyz);
+	boundEst.setInputNormals(normals);
+	boundEst.setSearchMethod(kdtree2);
+	boundEst.setKSearch(20);
+	boundEst.setAngleThreshold(M_PI / 2);
+	boundEst.compute(boundaries);
+	//提取边缘轮廓
+	cloud_simple->width = (int)cloud_xyz->points.size();
+	cloud_simple->height = 1;
+	cloud_simple->points.resize(cloud_simple->width*cloud_simple->height);
+	int j = 0;
+	for (int i = 0; i < cloud_xyz->points.size(); i++)
+	{
+		//如果是边缘轮廓点或者是是内部点几率大于简化率的点则保存下来
+		if (boundaries.points[i].boundary_point != 0 || rand() % 100 > rate)
+		{	
+			cloud_simple->points[j].x = cloud_xyz->points[i].x;
+			cloud_simple->points[j].y = cloud_xyz->points[i].y;
+			cloud_simple->points[j].z = cloud_xyz->points[i].z;
+			j++;
+		}
+		continue;
+	}
+	//重置简化以后的点云大小
+	cloud_simple->width = j;
+	cloud_simple->points.resize(cloud_simple->width*cloud_simple->height);
+
+	ui.statusBar->showMessage(QString::fromLocal8Bit("计算完成！"));
+	consoleLog(QString::fromLocal8Bit("保留叶片轮廓的点云简化"),
+		QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()),
+		QString::fromLocal8Bit(mycloud_vec[cloud_id].filename.c_str()),
+		QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0) + QString::fromLocal8Bit(" , Points: ") + QString::number(cloud_simple->points.size()));
+	
+	saveResult(cloud_simple);
+}
+
+
+//基于平面提取的点云简化
+
+//void QtApplication::Simplify2(int cloud_id,int rate,QString name)
+//{
+//		
+//		timer.restart();//开始计时
+//		pcl::PointXYZ point;
+//		cloud_xyz = transformPointCloud(mycloud_vec[cloud_id]);
+//		srand(time(0));
+//		// Read in the cloud data
+//		//pcl::PCDReader reader;
+//		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
+//		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f(new pcl::PointCloud<pcl::PointXYZ>);		
+//
+//		QMessageBox::information(this,
+//			QString::fromLocal8Bit("提示信息"),
+//			QString::fromLocal8Bit("一共有：") + QString::number(cloud_xyz->points.size(), 10) + QString::fromLocal8Bit("个点"));
+//		//输出
+//		ofstream fout("E:\\Date\\PointCloud\\temp\\plane.txt");
+//		int point_num = 0;
+//		// Create the segmentation object for the planar model and set all the parameters
+//		pcl::SACSegmentation<pcl::PointXYZ> seg;
+//		pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+//		pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+//		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZ>());
+//		pcl::PCDWriter writer;
+//		seg.setOptimizeCoefficients(true);
+//		seg.setModelType(pcl::SACMODEL_PLANE);
+//		seg.setMethodType(pcl::SAC_RANSAC);
+//		seg.setMaxIterations(100);
+//		seg.setDistanceThreshold(0.02);    //此处可以自己修改，一般保持默认即可
+//
+//		int i = 0, nr_points = (int)cloud_xyz->points.size();
+//		while (cloud_xyz->points.size() > 0.3 * nr_points)    //此处的0.3可以修改，一般保持默认即可
+//		{
+//			// Segment the largest planar component from the remaining cloud
+//			seg.setInputCloud(cloud_xyz);
+//			seg.segment(*inliers, *coefficients);
+//			if (inliers->indices.size() == 0)
+//			{
+//				//std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+//					
+//				QMessageBox::information(this,
+//					QString::fromLocal8Bit("提示信息"),
+//					"Could not estimate a planar model for the given dataset.");
+//				break;
+//			}
+//
+//			// Extract the planar inliers from the input cloud
+//			pcl::ExtractIndices<pcl::PointXYZ> extract;
+//			extract.setInputCloud(cloud_xyz);
+//			extract.setIndices(inliers);
+//			extract.setNegative(false);
+//
+//			// Get the points associated with the planar surface
+//			extract.filter(*cloud_plane);
+//			//std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
+//			/* QMessageBox::information(this,
+//				QString::fromLocal8Bit("提示信息"),
+//				"PointCloud representing the planar component: " + QString::number(cloud_plane->points.size(),10) +" data points.");
+//			*/
+//			for (int i = 0; i <cloud_plane->points.size(); i++)
+//			{
+//
+//				/*QMessageBox::information(this,
+//					QString::fromLocal8Bit("提示信息"),
+//					QString::fromLocal8Bit("写点云数据"));
+//*/
+//				if (rand() % 100 > rate)            //平面简化率为70%
+//				{
+//					fout << cloud_plane->points[i].x << " " << cloud_plane->points[i].y << " " << cloud_plane->points[i].z << endl;
+//					point_num++;
+//				}
+//			}
+//
+//			// Remove the planar inliers, extract the rest
+//			extract.setNegative(true);
+//			extract.filter(*cloud_f);
+//			*cloud_xyz = *cloud_f;
+//		}
+//		for (int i = 0; i <cloud_xyz->points.size(); i++)
+//		{
+//
+//			/*QMessageBox::information(this,
+//				QString::fromLocal8Bit("提示信息"),
+//				QString::fromLocal8Bit("又一次写点云数据"));*/
+//			if (rand() % 100 > 30)            //简化率为30%
+//			{
+//				fout << cloud_xyz->points[i].x << " " << cloud_xyz->points[i].y << " " << cloud_xyz->points[i].z << endl;
+//				point_num++;
+//			}
+//		}
+//		fout << point_num<<"个点"<<endl;
+//		fout.close();
+//		consoleLog(QString::fromLocal8Bit("简化"),
+//			QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()),
+//			QString::fromLocal8Bit(mycloud_vec[cloud_id].filename.c_str()),
+//			QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0) + QString::fromLocal8Bit(" , Points: ") + QString::number(mycloud.cloud->points.size()));	
+//}
+//
+//
+
+
+//提取点云包围盒
+void QtApplication::BoundingBox()
+{
+	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
+	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
+	if (selected_item_count == 0)
+	{
+		QMessageBox::information(this,
+			QString::fromLocal8Bit("提示信息"),
+			QString::fromLocal8Bit("请选择一个点云文件"));
+		return;
+	}
+	else
+	{
+		
+		for (int i = 0; i != selected_item_count; i++)
+		{
+
+			int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[i]);
+			//转换点云类型
+			cloud_xyz = transformPointCloud(mycloud_vec[cloud_id]);			
+			//定义存储两个极值的点
+			pcl::PointXYZ point_min, point_max;
+			//获取极值坐标
+			pcl::getMinMax3D(*cloud_xyz, point_min, point_max);
+			//输出结果
+			QMessageBox::information(this,
+				QString::fromLocal8Bit("包围盒信息"),
+				QString::fromLocal8Bit("Max.x:	") + QString("%1").arg(point_max.x) + "\n" +
+				QString::fromLocal8Bit("Max.y:	") + QString("%1").arg(point_max.y) + "\n" +
+				QString::fromLocal8Bit("Max.z:	") + QString("%1").arg(point_max.z) + "\n" +
+				QString::fromLocal8Bit("Min.x:	") + QString("%1").arg(point_min.x) + "\n" +
+				QString::fromLocal8Bit("Min.y:	") + QString("%1").arg(point_min.y) + "\n" +
+				QString::fromLocal8Bit("Max.z:	") + QString("%1").arg(point_min.z));
+
+
+			consoleLog(QString::fromLocal8Bit("获取包围盒"),
+				QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()),
+				QString::fromLocal8Bit(mycloud_vec[cloud_id].filename.c_str()),
+				QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0) + QString::fromLocal8Bit(" , Points: ") + QString::number(mycloud.cloud->points.size()));
+			viewer->addCoordinateSystem(20.0,point_min.x,point_min.y,point_min.z,"cordinate1");  //添加坐标系
+		}
+		ui.qvtkWidget->update();		
+	}
+}
+
+
+
+
+
+
+/*****    特征提取菜单函数实现   *****/
+//拾取屏幕三维点坐标 暂未实现
+void QtApplication::SelectPoint_callback(const pcl::visualization::PointPickingEvent& event, void* args)
+{
+	if (pThis == NULL) return;
+	struct callback_args* data = (struct callback_args *)args;//无法读取内存
+	if (event.getPointIndex() == -1) return;
+	
+	PointT current_point,temp_point;
+	event.getPoint(current_point.x, current_point.y, current_point.z);
+	//if (data->clicked_points_3d->size()>=1)	data->clicked_points_3d->clear();
+	
+	temp_point.x = current_point.x; temp_point.y = current_point.y; temp_point.z = current_point.z;
+		
+	//data->clicked_points_3d->push_back(temp_point);
+	// Draw clicked points in red:
+	//pcl::visualization::PointCloudColorHandlerCustom<PointT> red(data->clicked_points_3d, 255, 0, 0);
+	//data->viewerPtr->removePointCloud("clicked_points");
+	//data->viewerPtr->addPointCloud(data->clicked_points_3d, red, "clicked_points");
+	//data->viewerPtr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "clicked_points");
+	//std::cout << current_point.x << " " << current_point.y << " " << current_point.z << std::endl;
+
+	pThis->PointPickingShow(temp_point);
+	
+}
+
+void QtApplication::PointPickingShow(pcl::PointXYZRGBA current_point)
+{
+	pcl::PointCloud<PointT>::Ptr cloud_temp;
+	cloud_temp->push_back(current_point);
+	pcl::visualization::PointCloudColorHandlerCustom<PointT> red(cloud_temp, 255, 0, 0);
+	viewer->removePointCloud("clicked_points");
+	viewer->addPointCloud(cloud_temp,red,"clicked_points");
+	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "clicked_points");
+	ui.qvtkWidget->update();
+	pointselected->setLineEdit(current_point.x, current_point.y, current_point.z);
+}
+
+void QtApplication::SelectPoint()
+{
+	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
+	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
+	if (selected_item_count == 0)
+	{
+		QMessageBox::information(this,
+			QString::fromLocal8Bit("提示信息"),
+			QString::fromLocal8Bit("请选择一个点云文件"));
+		return;
+	}
+	else
+	{
+		pointselected->setModal(false);
+		pointselected->show();
+		int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[0]);
+		//cloud_mutex.lock();// 锁住，不允许此段时间内，点云数据被修改		
+		viewer->addPointCloud(mycloud_vec[cloud_id].cloud);
+		    
+		// Add point picking callback to viewer:
+		struct callback_args cb_args;
+		PointCloudT::Ptr clicked_points_3d(new PointCloudT);
+		cb_args.clicked_points_3d = clicked_points_3d;
+		cb_args.viewerPtr = pcl::visualization::PCLVisualizer::Ptr(viewer);
+		//viewer->registerPointPickingCallback(SelectPoint_callback, (void*)&cb_args);
+		viewer->registerPointPickingCallback(SelectPoint_callback,(void*)&cb_args);
+		
+		//cloud_mutex.unlock();
+	}
+
+}
+
+//提取油菜叶片点云边缘轮廓
+void QtApplication::Boundary()
+{
+	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
+	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
+	if (selected_item_count == 0)
+	{
+		QMessageBox::information(this,
+			QString::fromLocal8Bit("提示信息"),
+			QString::fromLocal8Bit("请选择一个点云文件"));
+		return;
+	}
+	else
+	{
+		for (int i = 0; i != selected_item_count; i++)
+		{
+			timer.restart();//开始计时
+			ui.statusBar->showMessage(QString::fromLocal8Bit("计算中...."));
+			int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[i]);
+			//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
+			cloud_xyz = transformPointCloud(mycloud_vec[cloud_id]);
+			
+			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_b(new pcl::PointCloud<pcl::PointXYZ>);
+			//计算法线
+			pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normEst;
+			pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+			pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+			pcl::search::KdTree<pcl::PointXYZ>::Ptr tree2(new pcl::search::KdTree<pcl::PointXYZ>);
+			tree->setInputCloud(cloud_xyz);
+			normEst.setInputCloud(cloud_xyz);
+			normEst.setSearchMethod(tree);
+			normEst.setKSearch(20);//K近邻搜索
+			normEst.compute(*normals);
+			//判断边缘点
+			pcl::PointCloud<pcl::Boundary> boundaries;
+			pcl::BoundaryEstimation<pcl::PointXYZ, pcl::Normal, pcl::Boundary> boundEst;
+			tree2->setInputCloud(cloud_xyz);
+			boundEst.setInputCloud(cloud_xyz);
+			boundEst.setInputNormals(normals);
+			boundEst.setSearchMethod(tree2);
+			boundEst.setKSearch(20);
+			boundEst.setAngleThreshold(M_PI / 2);
+			boundEst.compute(boundaries);
+			//提取边缘点重组点云
+			cloud_b->width = (int)cloud_xyz->points.size();
+			cloud_b->height = 1;
+			cloud_b->points.resize(cloud_b->width*cloud_b->height);
+			int j = 0;
+			for (int i = 0; i < cloud_xyz->points.size(); i++)
+			{
+				if (boundaries.points[i].boundary_point != 0)
+				{
+					cloud_b->points[j].x = cloud_xyz->points[i].x;
+					cloud_b->points[j].y = cloud_xyz->points[i].y;
+					cloud_b->points[j].z = cloud_xyz->points[i].z;
+					j++;
+				}
+				continue;
+			}
+			cloud_b->width = j;
+			cloud_b->points.resize(cloud_b->width*cloud_b->height);
+			
+			ui.statusBar->showMessage(QString::fromLocal8Bit("计算完成!"));
+			consoleLog(QString::fromLocal8Bit("提取特征边界"),
+				QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()),
+				QString::fromLocal8Bit(mycloud_vec[cloud_id].filename.c_str()),
+				QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0) + QString::fromLocal8Bit(" , Points: ") + QString::number(cloud_b->points.size()));
+
+			saveResult(cloud_b);//保存计算结果点云并加载
+			
+		}//for						
+	}
+}
+
+
+
+
+
+/*****    三维重建菜单函数实现   *****/
 
 //生成网格面片
 void QtApplication::Surface()
@@ -827,22 +1369,8 @@ void QtApplication::Surface()
 			调用boost::this_thread::sleep好像也会编译出错
 			因此先进行点云类型转换
 			*/
-			pcl::PointXYZ point;
-			cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
-			timer.restart();//开始计时
-			//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
-			//int number = mycloud_vec[cloud_id].cloud->size();
-			for (size_t i = 0; i != mycloud_vec[cloud_id].cloud->size(); i++)
-			{
-				point.x = mycloud_vec[cloud_id].cloud->points[i].x;
-				point.y = mycloud_vec[cloud_id].cloud->points[i].y;
-				point.z = mycloud_vec[cloud_id].cloud->points[i].z;
-				cloud_xyz->push_back(point);//把这个点添加进cloud_xyz点云中
-			}
-			if (!cloud_xyz)
-			{
-				return;
-			}
+			timer.restart();//开始计时			
+			cloud_xyz = transformPointCloud(mycloud_vec[cloud_id]);
 			/****** 法向估计模块 ******/
 			//创建法线估计对象 n
 			////Normal结构体表示给定点所在样本曲面上的法线方向，以及对应曲率的测量值
@@ -941,22 +1469,10 @@ void QtApplication::Wireframe()
 			调用boost::this_thread::sleep好像也会编译出错
 			因此先进行点云类型转换
 			*/
-			pcl::PointXYZ point;
-			cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
 			timer.restart();//开始计时
-			//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
-			//int number = mycloud_vec[cloud_id].cloud->size();
-			for (size_t i = 0; i != mycloud_vec[cloud_id].cloud->size(); i++)
-			{
-				point.x = mycloud_vec[cloud_id].cloud->points[i].x;
-				point.y = mycloud_vec[cloud_id].cloud->points[i].y;
-				point.z = mycloud_vec[cloud_id].cloud->points[i].z;
-				cloud_xyz->push_back(point);//把这个点添加进cloud_xyz点云中
-			}
-			if (!cloud_xyz)
-			{
-				return;
-			}
+
+			cloud_xyz = transformPointCloud(mycloud_vec[cloud_id]);
+
 			/****** 法向估计模块 ******/
 			//创建法线估计对象 n
 			////Normal结构体表示给定点所在样本曲面上的法线方向，以及对应曲率的测量值
@@ -1024,7 +1540,7 @@ void QtApplication::Wireframe()
 				viewer->spinOnce(100);
 				//boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 			}
-			QMessageBox::information(this, 
+			QMessageBox::information(this,
 				QString::fromLocal8Bit("提示信息"),
 				QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()) + QString::fromLocal8Bit("三角格网化已完成!")
 				);
@@ -1032,275 +1548,6 @@ void QtApplication::Wireframe()
 	}
 }
 
-
-
-
-/*****    点云简化菜单函数实现   *****/
-void QtApplication::Simplify()
-{
-	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
-	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
-	if (selected_item_count == 0)
-	{
-		QMessageBox::information(this,
-			QString::fromLocal8Bit("提示信息"),
-			QString::fromLocal8Bit("请选择一个点云文件"));
-		return;
-	}
-	else
-	{
-
-		for (int i = 0; i != selected_item_count; i++)
-		{
-			timer.restart();//开始计时
-			int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[i]);
-			/* 问题
-			好像该方法只能处理PointXYZ的点云，用PointXZYRGBA的点云编译会报错
-			调用boost::this_thread::sleep好像也会编译出错
-			因此先进行点云类型转换
-			*/
-			pcl::PointXYZ point;
-			cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
-			timer.restart();//开始计时
-			//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
-			//int number = mycloud_vec[cloud_id].cloud->size();
-			for (size_t i = 0; i != mycloud_vec[cloud_id].cloud->size(); i++)
-			{
-				point.x = mycloud_vec[cloud_id].cloud->points[i].x;
-				point.y = mycloud_vec[cloud_id].cloud->points[i].y;
-				point.z = mycloud_vec[cloud_id].cloud->points[i].z;
-				cloud_xyz->push_back(point);//把这个点添加进cloud_xyz点云中
-			}
-			if (!cloud_xyz)
-			{
-				return;
-			}
-
-			srand(time(0));
-			// Read in the cloud data
-			pcl::PCDReader reader;
-			//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
-			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f(new pcl::PointCloud<pcl::PointXYZ>);
-			//reader.read("table_scene_lms400.pcd", *cloud_filtered);
-			//cloud_filtered
-			//std::cout << "PointCloud has: " << cloud_filtered->points.size() << " data points." << std::endl; //*
-
-
-			QMessageBox::information(this,
-				QString::fromLocal8Bit("提示信息"),
-				QString::fromLocal8Bit("一共有：") + QString::number(cloud_xyz->points.size(), 10) + QString::fromLocal8Bit("个点"));
-			//输出
-			ofstream fout("E:\\Date\\PointCloud\\temp\\plane.txt");
-			int point_num = 0;
-			// Create the segmentation object for the planar model and set all the parameters
-			pcl::SACSegmentation<pcl::PointXYZ> seg;
-			pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-			pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZ>());
-			pcl::PCDWriter writer;
-			seg.setOptimizeCoefficients(true);
-			seg.setModelType(pcl::SACMODEL_PLANE);
-			seg.setMethodType(pcl::SAC_RANSAC);
-			seg.setMaxIterations(100);
-			seg.setDistanceThreshold(0.02);    //此处可以自己修改，一般保持默认即可
-
-			int i = 0, nr_points = (int)cloud_xyz->points.size();
-			while (cloud_xyz->points.size() > 0.3 * nr_points)    //此处的0.3可以修改，一般保持默认即可
-			{
-				// Segment the largest planar component from the remaining cloud
-				seg.setInputCloud(cloud_xyz);
-				seg.segment(*inliers, *coefficients);
-				if (inliers->indices.size() == 0)
-				{
-					//std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-					
-					QMessageBox::information(this,
-						QString::fromLocal8Bit("提示信息"),
-						"Could not estimate a planar model for the given dataset.");
-					break;
-				}
-
-				// Extract the planar inliers from the input cloud
-				pcl::ExtractIndices<pcl::PointXYZ> extract;
-				extract.setInputCloud(cloud_xyz);
-				extract.setIndices(inliers);
-				extract.setNegative(false);
-
-				// Get the points associated with the planar surface
-				extract.filter(*cloud_plane);
-				//std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
-			   /* QMessageBox::information(this,
-					QString::fromLocal8Bit("提示信息"),
-					"PointCloud representing the planar component: " + QString::number(cloud_plane->points.size(),10) +" data points.");
-				*/
-				for (int i = 0; i <cloud_plane->points.size(); i++)
-				{
-
-					/*QMessageBox::information(this,
-						QString::fromLocal8Bit("提示信息"),
-						QString::fromLocal8Bit("写点云数据"));
-*/
-					if (rand() % 100 < 30)            //平面简化率为70%
-					{
-						fout << cloud_plane->points[i].x << " " << cloud_plane->points[i].y << " " << cloud_plane->points[i].z << endl;
-						point_num++;
-					}
-				}
-
-				// Remove the planar inliers, extract the rest
-				extract.setNegative(true);
-				extract.filter(*cloud_f);
-				*cloud_xyz = *cloud_f;
-			}
-			for (int i = 0; i <cloud_xyz->points.size(); i++)
-			{
-
-				/*QMessageBox::information(this,
-					QString::fromLocal8Bit("提示信息"),
-					QString::fromLocal8Bit("又一次写点云数据"));*/
-				if (rand() % 100 < 70)            //简化率为30%
-				{
-					fout << cloud_xyz->points[i].x << " " << cloud_xyz->points[i].y << " " << cloud_xyz->points[i].z << endl;
-					point_num++;
-				}
-			}
-			fout << point_num<<"个点"<<endl;
-			fout.close();
-			consoleLog(QString::fromLocal8Bit("简化"),
-				QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()),
-				QString::fromLocal8Bit(mycloud_vec[cloud_id].filename.c_str()),
-				QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0) + QString::fromLocal8Bit(" , Points: ") + QString::number(mycloud.cloud->points.size()));
-		}
-	}
-}
-
-
-
-/*****    特征提取菜单函数实现   *****/
-
-void QtApplication::Boundary()
-{
-	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
-	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
-	if (selected_item_count == 0)
-	{
-		QMessageBox::information(this,
-			QString::fromLocal8Bit("提示信息"),
-			QString::fromLocal8Bit("请选择一个点云文件"));
-		return;
-	}
-	else
-	{
-
-		for (int i = 0; i != selected_item_count; i++)
-		{
-			timer.restart();//开始计时
-			int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[i]);
-			
-			pcl::PointXYZ point;
-			cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
-			timer.restart();//开始计时
-			//把mycloud.cloud（包含XYZRGBA的点云）转换成cloud_xyz（只包含XYZ的点云）
-			//int number = mycloud_vec[cloud_id].cloud->size();
-			for (size_t i = 0; i != mycloud_vec[cloud_id].cloud->size(); i++)
-			{
-				point.x = mycloud_vec[cloud_id].cloud->points[i].x;
-				point.y = mycloud_vec[cloud_id].cloud->points[i].y;
-				point.z = mycloud_vec[cloud_id].cloud->points[i].z;
-				cloud_xyz->push_back(point);//把这个点添加进cloud_xyz点云中
-			}
-			if (!cloud_xyz)
-			{
-				return;
-			}
-
-			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_b(new pcl::PointCloud<pcl::PointXYZ>);
-			//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-			//cloud = mycloud_vec[cloud_id].cloud;
-			//pcl::io::loadPCDFile("D:\\12.pcd", *cloud);
-			//计算法线
-			pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normEst;
-			pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-			pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-			pcl::search::KdTree<pcl::PointXYZ>::Ptr tree2(new pcl::search::KdTree<pcl::PointXYZ>);
-			tree->setInputCloud(cloud_xyz);
-			normEst.setInputCloud(cloud_xyz);
-			normEst.setSearchMethod(tree);
-			normEst.setKSearch(20);
-			normEst.compute(*normals);
-			//判断边缘点
-			pcl::PointCloud<pcl::Boundary> boundaries;
-			pcl::BoundaryEstimation<pcl::PointXYZ, pcl::Normal, pcl::Boundary> boundEst;
-			tree2->setInputCloud(cloud_xyz);
-			boundEst.setInputCloud(cloud_xyz);
-			boundEst.setInputNormals(normals);
-			boundEst.setSearchMethod(tree2);
-			boundEst.setKSearch(20);
-			boundEst.setAngleThreshold(M_PI / 2);
-			boundEst.compute(boundaries);
-			//提取边缘点重组点云
-			cloud_b->width = (int)cloud_xyz->points.size();
-			cloud_b->height = 1;
-			cloud_b->points.resize(cloud_b->width*cloud_b->height);
-			int j = 0;
-			for (int i = 0; i < cloud_xyz->points.size(); i++)
-			{
-				if (boundaries.points[i].boundary_point != 0)
-				{
-					cloud_b->points[j].x = cloud_xyz->points[i].x;
-					cloud_b->points[j].y = cloud_xyz->points[i].y;
-					cloud_b->points[j].z = cloud_xyz->points[i].z;
-					j++;
-				}
-				//else if (rand() % 100 < 50)            //简化率为50%
-				//{
-				//	cloud_b->points[j].x = cloud->points[i].x;
-				//	cloud_b->points[j].y = cloud->points[i].y;
-				//	cloud_b->points[j].z = cloud->points[i].z;
-				//	j++;
-				//}
-				continue;
-			}
-			cloud_b->width = j;
-			cloud_b->points.resize(cloud_b->width*cloud_b->height);
-			
-			pcl::io::savePCDFile(mycloud_vec[cloud_id].dirname + "boundary.pcd", *cloud_b);
-			
-			
-			
-					
-			mycloud.cloud.reset(new PointCloudT); // Reset cloud
-			pcl::copyPointCloud(*cloud_b, *mycloud.cloud);//转换点云格式	
-			mycloud.filename = mycloud_vec[cloud_id].dirname + "boundary.pcd";
-			mycloud.dirname  = mycloud_vec[cloud_id].dirname;
-			mycloud.subname  = "boundary.pcd";
-			setCloudColor(255,255,0);
-			//pcl::io::loadOBJFile(mycloud_vec[cloud_id].dirname + "boundary.pcd", *(mycloud.cloud));
-			
-			mycloud_vec.push_back(mycloud);
-
-
-			consoleLog(QString::fromLocal8Bit("提取特征边界"),
-				QString::fromLocal8Bit(mycloud_vec[cloud_id].subname.c_str()),
-				QString::fromLocal8Bit(mycloud_vec[cloud_id].filename.c_str()),
-				QString::fromLocal8Bit("Time cost: ") + QString("%1s").arg(timer.elapsed() / 1000.0) + QString::fromLocal8Bit(" , Points: ") + QString::number(mycloud.cloud->points.size()));
-
-
-			//更新资源管理树
-			QTreeWidgetItem *cloudName = new QTreeWidgetItem(QStringList() << QString::fromLocal8Bit(mycloud.subname.c_str()));
-			cloudName->setIcon(0, QIcon(":/Icon/Resources/Icon/Icon.png"));//设置资源树图标
-			ui.tree_PointCloud->addTopLevelItem(cloudName);
-
-
-			//setWindowTitle(filename + " - CloudViewer"); //更新标题
-
-			total_points += mycloud.cloud->points.size();		
-		}
-		setPropertyTable(mycloud_vec.size(), 0, total_points, "255 255 255");
-		showPointcloudAdd();  //更新视图窗口
-	}
-
-}
 
 /*****    帮助菜单函数实现   *****/
 
@@ -1458,12 +1705,12 @@ void QtApplication::CordinateChecked(int value)
 	switch (value)
 	{
 	case 0:
-		viewer->removeCoordinateSystem();  //移除坐标系
+		viewer->removeCoordinateSystem("cordinate", 0);  //移除坐标系
 		// 输出窗口
 		consoleLog(QString::fromLocal8Bit("移除坐标系"), QString::fromLocal8Bit("移除"), "", "");
 		break;
 	case 2:
-		viewer->addCoordinateSystem();  //添加坐标系
+		viewer->addCoordinateSystem(50.0,"cordinate",0);  //添加坐标系
 		// 输出窗口
 		consoleLog(QString::fromLocal8Bit("添加坐标系"), QString::fromLocal8Bit("添加"), "", "");
 		break;
@@ -1511,11 +1758,12 @@ void QtApplication::dataSelected(QTreeWidgetItem* item, int count)
 	//int cloud_size = mycloud_vec[count].cloud->points.size();
 	QList<QTreeWidgetItem*> itemList = ui.tree_PointCloud->selectedItems();
 	int selected_item_count = ui.tree_PointCloud->selectedItems().size();
-	long pointsnumber =0;//记录被选中点云总点数
+	long pointsnumber = 0;//记录被选中点云总点数
 	// 如果选中多个点云，属性窗口点数项显示选中的点云个数和;选中点云尺寸变大
 	for (int i = 0; i != selected_item_count; i++)
 	{
 		int cloud_id = ui.tree_PointCloud->indexOfTopLevelItem(itemList[i]);
+		//mycloud = mycloud_vec[cloud_id];//当前mycloud为点击选中的点云
 		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
 			2, "cloud" + QString::number(cloud_id).toStdString());//选中点云尺寸变大
 		pointsnumber += mycloud_vec[cloud_id].cloud->points.size();
@@ -1533,7 +1781,6 @@ void QtApplication::dataSelected(QTreeWidgetItem* item, int count)
 	
 	//更新属性窗口信息
 	setPropertyTable(mycloud_vec.size(), pointsnumber, total_points, QString::number(cloud_r) + " " + QString::number(cloud_g) + " " + QString::number(cloud_b));
-	
 	ui.qvtkWidget->update();
 }
 //右键单击点云文件，右键响应菜单
@@ -1553,7 +1800,7 @@ void QtApplication::popMenu_DataTree(const QPoint&)
 
 		QAction DataHide(QString::fromLocal8Bit("隐藏"), this);
 		QAction DataShow(QString::fromLocal8Bit("显示"), this);
-		QAction DataDelete(QString::fromLocal8Bit("删除"), this);
+		QAction DataDelete(QString::fromLocal8Bit("移除"), this);
 		QAction ColorChange(QString::fromLocal8Bit("修改点云颜色"), this);
 
 		connect(&DataHide, &QAction::triggered, this, &QtApplication::dataHide);
@@ -1771,6 +2018,5 @@ void QtApplication::disableConsole(){
 	clearConsole();//操作记录禁用前清空操作记录
 	enable_console = false;
 }
-
 
 
